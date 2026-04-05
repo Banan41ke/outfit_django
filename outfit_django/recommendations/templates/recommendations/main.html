@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ИИ Стилист{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #faf8f5 0%, #f5f0e8 100%);
+            min-height: 100vh;
+            color: #2d3436;
+        }
+
+        nav {
+            background: #f7f4f0;
+            padding: 15px 30px;
+            border-radius: 12px;
+            margin: 20px auto;
+            max-width: 1200px;
+            border: 1px solid #e8e0d5;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #5c4d3c;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        nav a:hover {
+            background: #e8e0d5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Hero секция */
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            margin-bottom: 40px;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            color: #2d3436;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #5c4d3c;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Форма загрузки с drag & drop */
+        .upload-section {
+            max-width: 600px;
+            margin: 0 auto 60px;
+        }
+
+        .upload-zone {
+            background: white;
+            border: 3px dashed #c4b5a5;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #5c4d3c;
+            background: #faf8f5;
+            transform: scale(1.02);
+        }
+
+        .upload-zone.has-file {
+            border-color: #00b894;
+            background: #e8f8f5;
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            color: #5c4d3c;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .upload-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Предпросмотр */
+        .preview-container {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .preview-container.active {
+            display: block;
+        }
+
+        .preview-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .preview-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f7f4f0;
+            border-radius: 12px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #2d3436;
+        }
+
+        .change-file {
+            color: #5c4d3c;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: #2d3436;
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .submit-btn:hover {
+            background: #5c4d3c;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .submit-btn:disabled {
+            background: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Примеры работы */
+        .examples-section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 32px;
+            color: #2d3436;
+            margin-bottom: 40px;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .example-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .example-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .example-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .example-header.shoes { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .example-header.tops { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .example-header.bottoms { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+        .example-icon {
+            font-size: 40px;
+        }
+
+        .example-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .example-body {
+            padding: 20px;
+        }
+
+        .example-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .example-item-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .example-item-box.small {
+            transform: scale(0.85);
+        }
+
+        .item-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 3px solid white;
+        }
+
+        .item-placeholder span {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+
+        .item-label {
+            font-size: 12px;
+            color: #5c4d3c;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .example-results {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .example-arrow {
+            font-size: 28px;
+            color: #00b894;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+
+        .example-images {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .example-thumb {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #e8e0d5;
+        }
+
+        .example-result {
+            background: #f7f4f0;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .example-result-title {
+            font-weight: 600;
+            color: #5c4d3c;
+            margin-bottom: 10px;
+        }
+
+        /* Навигация */
+        .main-nav {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 16px;
+            margin: 20px auto;
+            max-width: 1200px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e8e0d5;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-logo {
+            font-size: 32px;
+        }
+
+        .nav-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3436;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #5c4d3c;
+            font-weight: 600;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            background: #f7f4f0;
+            color: #2d3436;
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background: #2d3436;
+            color: white;
+            box-shadow: 0 4px 12px rgba(45, 52, 54, 0.3);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .main-nav {
+                flex-direction: column;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .nav-links {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav-link {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+
+        .nav-logo-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+    <nav class="main-nav">
+        <h1>
+            <img src="/static/images/logo.png" alt="ИИ Стилист" style="width: 60px; height: 60px; border-radius: 12px;">
+            ИИ Стилист
+        </h1>
+        <div class="nav-links">
+            <a href="/" class="nav-link active">
+                <span class="nav-icon">🏠</span>
+                <span>Главная</span>
+            </a>
+            <a href="/cart/" class="nav-link">
+                <span class="nav-icon">🛒</span>
+                <span>Корзина</span>
+            </a>
+            <a href="/favorites/" class="nav-link">
+                <span class="nav-icon">❤️</span>
+                <span>Избранное</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block content %}
+        <!-- Hero -->
+        <div class="hero">
+            <h1>👔 ИИ Стилист</h1>
+            <p>Загрузите фото вашей вещи и получите рекомендации по сочетанию. Искусственный интеллект подберёт идеальный образ за секунды.</p>
+        </div>
+
+        <!-- Форма загрузки -->
+        <div class="upload-section">
+            <!-- В форме измените action -->
+                <form method="post" enctype="multipart/form-data" action="{% url 'main' %}">
+                {% csrf_token %}
+
+                <div class="upload-zone" id="uploadZone">
+                    <span class="upload-icon">📤</span>
+                    <p class="upload-text">Перетащите фото сюда или кликните для выбора</p>
+                    <p class="upload-hint">Поддерживаются JPG, PNG, WEBP</p>
+                    <input type="file" name="photo" accept="image/*" required class="upload-input" id="fileInput">
+                </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <img src="" alt="Предпросмотр" class="preview-image" id="previewImage">
+                    <div class="preview-info">
+                        <span class="file-name" id="fileName"></span>
+                        <span class="change-file" onclick="resetUpload()">Изменить</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                    Получить рекомендации
+                </button>
+            </form>
+
+            {% if error %}
+                <div style="margin-top: 20px; padding: 15px; background: #ffe0e0; color: #d63031; border-radius: 8px;">
+                    {{ error }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Примеры работы -->
+        <div class="examples-section">
+            <h2 class="section-title">Как это работает</h2>
+
+            <div class="examples-grid">
+                <!-- Пример 1: Обувь -->
+                <div class="example-card">
+                    <div class="example-header shoes">
+                        <span class="example-icon">👟</span>
+                        <span class="example-title">Загрузил кроссовки</span>
+                    </div>
+                    <div class="example-body">
+                        <div class="example-row">
+                            <div class="example-item-box">
+                                <div class="item-placeholder" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                                    <span>👟</span>
+                                </div>
+                                <span class="item-label">Кроссовки</span>
+                            </div>
+                            <span class="example-arrow">→</span>
+                            <div class="example-results">
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                                        <span>👕</span>
+                                    </div>
+                                    <span class="item-label">Верх</span>
+                                </div>
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%);">
+                                        <span>👖</span>
+                                    </div>
+                                    <span class="item-label">Низ</span>
+                                </div>
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);">
+                                        <span>🎒</span>
+                                    </div>
+                                    <span class="item-label">Аксессуар</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="example-result">
+                            <div class="example-result-title">✨ Результат:</div>
+                            <p>ИИ определил: <strong>спортивная обувь</strong> (99%)</p>
+                            <p>Подобрано: футболка, джоггеры, рюкзак</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Пример 2: Верх -->
+                <div class="example-card">
+                    <div class="example-header tops">
+                        <span class="example-icon">👕</span>
+                        <span class="example-title">Загрузил рубашку</span>
+                    </div>
+                    <div class="example-body">
+                        <div class="example-row">
+                            <div class="example-item-box">
+                                <div class="item-placeholder" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                                    <span>👔</span>
+                                </div>
+                                <span class="item-label">Рубашка</span>
+                            </div>
+                            <span class="example-arrow">→</span>
+                            <div class="example-results">
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+                                        <span>👖</span>
+                                    </div>
+                                    <span class="item-label">Низ</span>
+                                </div>
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);">
+                                        <span>👞</span>
+                                    </div>
+                                    <span class="item-label">Обувь</span>
+                                </div>
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);">
+                                        <span>👔</span>
+                                    </div>
+                                    <span class="item-label">Аксессуар</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="example-result">
+                            <div class="example-result-title">✨ Результат:</div>
+                            <p>ИИ определил: <strong>рубашка</strong> (95%)</p>
+                            <p>Подобрано: чиносы, лоферы, ремень</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Пример 3: Низ -->
+                <div class="example-card">
+                    <div class="example-header bottoms">
+                        <span class="example-icon">👖</span>
+                        <span class="example-title">Загрузил джинсы</span>
+                    </div>
+                    <div class="example-body">
+                        <div class="example-row">
+                            <div class="example-item-box">
+                                <div class="item-placeholder" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                    <span>👖</span>
+                                </div>
+                                <span class="item-label">Джинсы</span>
+                            </div>
+                            <span class="example-arrow">→</span>
+                            <div class="example-results">
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                        <span>🧥</span>
+                                    </div>
+                                    <span class="item-label">Верх</span>
+                                </div>
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                        <span>👟</span>
+                                    </div>
+                                    <span class="item-label">Обувь</span>
+                                </div>
+                                <div class="example-item-box small">
+                                    <div class="item-placeholder" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                                        <span>🧢</span>
+                                    </div>
+                                    <span class="item-label">Аксессуар</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="example-result">
+                            <div class="example-result-title">✨ Результат:</div>
+                            <p>ИИ определил: <strong>джинсы</strong> (97%)</p>
+                            <p>Подобрано: свитер, кеды, шапка</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            const previewContainer = document.getElementById('previewContainer');
+            const previewImage = document.getElementById('previewImage');
+            const fileName = document.getElementById('fileName');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // Drag & drop
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    fileInput.files = files;
+                    handleFile(files[0]);
+                }
+            });
+
+            // Click to upload
+            uploadZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            function handleFile(file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Пожалуйста, выберите изображение');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    fileName.textContent = file.name;
+                    previewContainer.classList.add('active');
+                    uploadZone.classList.add('has-file');
+                    uploadZone.style.display = 'none';
+                    submitBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function resetUpload() {
+                fileInput.value = '';
+                previewContainer.classList.remove('active');
+                uploadZone.classList.remove('has-file');
+                uploadZone.style.display = 'block';
+                submitBtn.disabled = true;
+            }
+        </script>
+        {% endblock %}
+    </div>
+</body>
+</html>
