@@ -17,36 +17,39 @@ class ClothingItem(models.Model):
         ('accessories', 'Аксессуары'),
     ]
 
-    # Идентификаторы
-    id = models.CharField(max_length=100, primary_key=True, help_text="ID из магазина (напр. lamoda_123)")
+    # ❗ id НЕ ТРОГАЕМ — Django сам создаёт AutoField
+    # id = models.AutoField(primary_key=True)  ← УДАЛИТЬ ЭТУ СТРОКУ
+
+    # 🔥 ВАЖНОЕ ПОЛЕ (твой mad_307940)
+    external_id = models.CharField(max_length=100, unique=True, verbose_name="Внешний ID")
+
     name = models.CharField(max_length=500, verbose_name="Название товара")
 
-    # Категория и пол (важно для фильтрации рекомендаций)
+    # Категория и пол
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, verbose_name="Категория")
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='U', verbose_name="Пол")
 
-    # Стилистика (Casual, Sport, Classic и т.д.)
+    # Стиль
     style_name = models.CharField(max_length=100, blank=True, null=True, verbose_name="Стиль")
 
     # Изображения
     image_path = models.CharField(max_length=500, verbose_name="Путь к локальному файлу")
     image_url = models.URLField(max_length=1000, blank=True, verbose_name="Ссылка на фото")
 
-    # Цветовые характеристики
-    color_name = models.CharField(max_length=100, blank=True, verbose_name="Цвет (название)")
-    color_rgb = models.JSONField(default=list, blank=True, help_text="Список [R, G, B]")
+    # Цвет
+    color_name = models.CharField(max_length=100, blank=True, verbose_name="Цвет")
+    color_rgb = models.JSONField(default=list, blank=True)
 
-    # Магазин и коммерческие данные
+    # Магазин
     store = models.CharField(max_length=100, blank=True, verbose_name="Магазин")
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Цена")
     currency = models.CharField(max_length=10, default='BYN', verbose_name="Валюта")
     product_url = models.URLField(max_length=1000, blank=True, verbose_name="Ссылка на товар")
 
-    # CLIP эмбеддинг (самое важное для поиска похожих)
-    # BinaryField хранит массив векторов в сжатом виде (через pickle)
+    # CLIP
     embedding = models.BinaryField(null=True, blank=True, verbose_name="Вектор CLIP")
 
-    # Технические поля
+    # Технические
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -65,18 +68,28 @@ class ClothingItem(models.Model):
 
 class UserQuery(models.Model):
     """Модель для хранения запросов пользователей и выданных рекомендаций"""
+
     user_id = models.CharField(max_length=100, verbose_name="ID пользователя")
     chat_id = models.CharField(max_length=100, verbose_name="ID чата")
 
-    # Фото, которое загрузил юзер
     query_image = models.ImageField(upload_to='queries/%Y/%m/', verbose_name="Запрос (фото)")
 
-    # Что определила нейронка в запросе
-    detected_category = models.CharField(max_length=20, choices=ClothingItem.CATEGORY_CHOICES, blank=True)
-    detected_gender = models.CharField(max_length=1, choices=ClothingItem.GENDER_CHOICES, blank=True)
+    detected_category = models.CharField(
+        max_length=20,
+        choices=ClothingItem.CATEGORY_CHOICES,
+        blank=True
+    )
+    detected_gender = models.CharField(
+        max_length=1,
+        choices=ClothingItem.GENDER_CHOICES,
+        blank=True
+    )
 
-    # Связь с результатами поиска
-    recommendations = models.ManyToManyField(ClothingItem, related_name='queries', verbose_name="Результаты")
+    recommendations = models.ManyToManyField(
+        ClothingItem,
+        related_name='queries',
+        verbose_name="Результаты"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 

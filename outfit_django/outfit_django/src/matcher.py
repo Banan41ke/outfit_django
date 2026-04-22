@@ -59,25 +59,23 @@ class OutfitMatcher:
             top_k: int = 6,
             season: str = "all"
     ) -> Dict[str, List[Dict]]:
-        """
-        Полный подбор образа на основе загруженного фото
-        """
+
         query_embedding = self.encoder.encode_image(query_image_path)
-
-        # 🔥 определяем пол по имени файла
-        query_path_str = str(query_image_path)
-
-        if "_F_" in query_path_str:
-            query_gender = "F"
-        elif "_M_" in query_path_str:
-            query_gender = "M"
-        else:
-            query_gender = None  # если пользователь загрузил своё фото
-
         if query_embedding is None:
             return {cat: [] for cat in CATEGORIES}
 
+        # 1. ОПРЕДЕЛЕНИЕ ПОЛА (Исправлено для твоей структуры папок)
+        query_path_str = str(query_image_path).replace("\\", "/")  # Унифицируем слеши
+
+        if "/M/" in query_path_str or "_M_" in query_path_str:
+            query_gender = "M"
+        elif "/F/" in query_path_str or "_F_" in query_path_str:
+            query_gender = "F"
+        else:
+            query_gender = None
+
         query_embedding = query_embedding.reshape(1, -1).astype('float32')
+        faiss.normalize_L2(query_embedding)
 
         complementary = {
             'tops': ['bottoms', 'shoes', 'accessories'],
@@ -90,65 +88,84 @@ class OutfitMatcher:
         target_cats = complementary.get(query_category, CATEGORIES)
 
         for cat in target_cats:
-            if self.indices[cat] is None:
+            print(f"\n🔍 Обработка категории: {cat}")
+
+            if self.indices.get(cat) is None:
+                print(f"  ❌ Индекс {cat} не загружен")
                 results[cat] = []
                 continue
 
-            # 🔥 увеличили пул кандидатов
-            D, I = self.indices[cat].search(query_embedding, top_k * 5)
+            print(f"  ✅ Индекс загружен, метаданных: {len(self.metadata[cat])}")
 
-            seen_ids = set()
-            seen_colors = set()
+            # 2. ПОИСК
+            search_k = min(500, len(self.metadata[cat]))
+            print(f"  🔎 Поиск {search_k} ближайших соседей...")
+
+            D, I = self.indices[cat].search(query_embedding, search_k)
+
+            print(f"  📊 Результаты поиска: D shape={D.shape}, I shape={I.shape}")
+            print(f"  📊 Первые 5 расстояний: {D[0][:5]}")
+            print(f"  📊 Первые 5 индексов: {I[0][:5]}")
+
             items = []
+            seen_ids = set()
+            seen_names = set()
 
             for idx, dist in zip(I[0], D[0]):
                 idx = int(idx)
 
-                if idx >= len(self.metadata[cat]):
+                if idx < 0 or idx >= len(self.metadata[cat]):
                     continue
 
                 meta = self.metadata[cat][idx]
-                filename = meta.get('raw_filename', '')
 
-                # 🔥 фильтр по полу
-                if query_gender:
-                    if f"_{query_gender}_" not in filename:
-                        continue
-                # фильтр по сезону
-                if season != "all" and isinstance(season, list):
-                    item_color = meta.get('color_name', '').lower()
-                    if item_color not in season:
-                        continue
+                filename = meta.get('raw_filename', meta.get('filename', ''))
+                if not filename:
+                    continue
+
+                print(f"DEBUG META CATEGORY: {meta.get('category')} | INDEX CAT: {cat} | FILE: {filename}")
+
+                real_category = meta.get('category')
+
+                # ❌ если категории нет — сразу пропускаем
+                if not real_category:
+                    continue
+
+                # ❌ если категория не совпадает — пропускаем
+                if real_category != cat:
+                    continue
 
                 item_id = meta.get('id', idx)
-                color = meta.get('color_name', 'unknown')
 
-                # ❌ убираем дубли
+                # ✅ УБИРАЕМ ДУБЛИКАТЫ ПО ID
                 if item_id in seen_ids:
                     continue
 
-                # 🎨 добавляем разнообразие (но не ломаем выдачу)
-                if color in seen_colors and len(items) < top_k:
+                # ✅ УБИРАЕМ ДУБЛИКАТЫ ПО ИМЕНИ (НО ПРАВИЛЬНО)
+                name_key = filename.lower()
+                if name_key in seen_names:
                     continue
 
-                seen_ids.add(item_id)
-                seen_colors.add(color)
+                # ❗ УБРАЛИ dist > 1.0 (это ломало всё)
 
-                # 🔥 нормальный скор
-                similarity = float(np.exp(-dist))
+                similarity = float(1 / (1 + dist))
 
                 item = {
                     'id': item_id,
-                    'path': f"{cat}/{meta.get('raw_filename', meta.get('filename', ''))}",
-                    'filename': meta.get('raw_filename', meta.get('original_name', meta.get('filename', ''))),
+                    'name': filename,
+                    'filename': filename,  # ← ДОБАВЛЕНО
+                    'image_path': meta.get('image_path', ''),  # ← ДОБАВЛЕНО (полный путь)
+                    'gender': meta.get('gender', ''),
                     'category': cat,
                     'color': meta.get('color_rgb', [128, 128, 128]),
-                    'color_name': color,
                     'similarity_score': similarity * 100,
                     'style': meta.get('style', 'casual')
                 }
 
                 items.append(item)
+
+                seen_ids.add(item_id)
+                seen_names.add(name_key)
 
                 if len(items) >= top_k:
                     break

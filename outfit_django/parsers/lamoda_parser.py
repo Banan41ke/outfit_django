@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 from typing import List
-from .base_parser import BaseParser, ParsedItem
+from base_parser import BaseParser, ParsedItem
 
 
 class LamodaParser(BaseParser):

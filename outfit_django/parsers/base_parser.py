@@ -21,6 +21,7 @@ class ParsedItem:
     color: Optional[str] = None
     sizes: Optional[list] = None
     description: Optional[str] = None
+    image_path: Optional[str] = None  # ← ДОБАВИТЬ ЭТУ СТРОКУ!
 
 
 class BaseParser(ABC):
@@ -68,6 +69,7 @@ class BaseParser(ABC):
             'price': item.price,
             'currency': item.currency,
             'image_url': item.image_url,
+            'image_path': item.image_path,  # ← ДОБАВИТЬ В СЛОВАРЬ
             'product_url': item.product_url,
             'store': item.store,
             'color': item.color,

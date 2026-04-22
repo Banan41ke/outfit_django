@@ -1,21 +1,15 @@
-"""
-Django settings for outfit_django project.
-"""
-from pathlib import Path
 import os
+from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Корень проекта (D:/PythonProject/outfit_django)
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-_4b6@8%qo*#paqkqo7xj!!2i1nf&ygoj&0wwp-hn=j!!30%(i5'
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
-# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -64,24 +58,18 @@ DATABASES = {
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+# Настройки статики (CSS, JS, логотипы)
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static", # Здесь лежит твой logo.png
 ]
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_TZ = True
-
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-
+# Настройки медиа (фото, которые загружает пользователь через форму)
 MEDIA_URL = 'media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 
-# Пути к данным
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-MODELS_DIR = os.path.join(BASE_DIR, 'models')
+# Пути к твоим данным и моделям (используются в скриптах обработки)
+DATA_DIR = BASE_DIR / 'data' # D:/PythonProject/outfit_django/data
+MODELS_DIR = BASE_DIR / 'models'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
