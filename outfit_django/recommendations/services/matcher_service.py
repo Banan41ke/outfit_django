@@ -8,7 +8,7 @@ class OutfitMatcherService:
         self.matcher = OutfitMatcher()
         self.encoder = CLIPEncoder()
 
-    def get_recommendations(self, image_path, top_k=6):
+    def get_recommendations(self, image_path, top_k=6, user_gender=None, user_style=None):
         """Получить рекомендации для загруженного изображения"""
         # Определяем категорию загруженного фото
         query_category, confidence = self.predict_category(image_path)
@@ -18,7 +18,9 @@ class OutfitMatcherService:
             image_path,
             query_category,
             top_k=top_k,
-            season="all"
+            season="all",
+            user_gender=user_gender,
+            user_style=user_style
         )
 
         return {

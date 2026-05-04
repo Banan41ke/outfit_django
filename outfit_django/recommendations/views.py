@@ -30,8 +30,17 @@ class MainView(View):
                 destination.write(chunk)
 
         try:
+            # получаем из формы
+            gender = request.POST.get('gender')
+            style = request.POST.get('style')
+
             matcher = OutfitMatcherService()
-            result = matcher.get_recommendations(temp_path, top_k=6)
+            result = matcher.get_recommendations(
+                temp_path,
+                top_k=6,
+                user_gender=gender,
+                user_style=style
+            )
 
             # Исправляем confidence (умножаем на 100 если в долях)
             raw_confidence = float(result.get('confidence', 0))

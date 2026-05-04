@@ -89,10 +89,7 @@
 
                                     <div class="card-image-wrapper">
                                         {% if item.image_url or item.image_path %}
-                                            <img src="{{ item|image_url }}"
-                                                 alt="{{ item.name }}"
-                                                 loading="lazy"
-                                                 onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'card-placeholder\'>🖼️</div>';">
+                                            <img src="{{ item|image_url }}">
                                         {% else %}
                                             <div class="card-placeholder">👕</div>
                                         {% endif %}

@@ -105,7 +105,7 @@ class LamodaParser(BaseParser):
                             image_url="https:" + src if src.startswith("//") else src,
                             product_url=base_domain + link['href'],
                             store=self.STORE_NAME,
-                            color=style
+                            style=style
                         ))
                     except:
                         continue

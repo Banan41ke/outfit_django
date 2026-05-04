@@ -72,3 +72,64 @@ class CLIPEncoder:
 
         print("✅ Эмбеддинги готовы")
         return df
+
+    def predict_style(self, image_path):
+        from PIL import Image
+        import torch
+        import clip
+
+        styles = [
+            "casual outfit",
+            "sport outfit",
+            "classic elegant outfit",
+            "streetwear outfit",
+            "formal business outfit",
+            "outdoor outfit"
+        ]
+
+        image = self.preprocess(Image.open(image_path).convert("RGB")).unsqueeze(0).to(self.device)
+        text = clip.tokenize(styles).to(self.device)
+
+        with torch.no_grad():
+            image_features = self.model.encode_image(image)
+            text_features = self.model.encode_text(text)
+
+            image_features /= image_features.norm(dim=-1, keepdim=True)
+            text_features /= text_features.norm(dim=-1, keepdim=True)
+
+            similarity = (image_features @ text_features.T).softmax(dim=-1)
+
+        best_idx = similarity.argmax().item()
+        return styles[best_idx], float(similarity[0][best_idx])
+
+    def predict_category(self, image_path):
+        from PIL import Image
+        import clip
+        import torch
+        import numpy as np
+
+        categories = [
+            "a t-shirt or shirt (top clothing)",
+            "pants or jeans (bottom clothing)",
+            "shoes or sneakers",
+            "accessories like bag, hat, glasses"
+        ]
+
+        image = self.preprocess(Image.open(image_path).convert("RGB")).unsqueeze(0).to(self.device)
+        text = clip.tokenize(categories).to(self.device)
+
+        with torch.no_grad():
+            image_features = self.model.encode_image(image)
+            text_features = self.model.encode_text(text)
+
+            image_features /= image_features.norm(dim=-1, keepdim=True)
+            text_features /= text_features.norm(dim=-1, keepdim=True)
+
+            similarity = (image_features @ text_features.T).softmax(dim=-1)
+
+        probs = similarity.cpu().numpy()[0]
+        idx = np.argmax(probs)
+
+        mapping = ["tops", "bottoms", "shoes", "accessories"]
+
+        return mapping[idx], float(probs[idx])

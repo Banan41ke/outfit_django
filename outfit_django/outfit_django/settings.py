@@ -65,8 +65,9 @@ STATICFILES_DIRS = [
 ]
 
 # Настройки медиа (фото, которые загружает пользователь через форму)
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+DATASET_ROOT = os.path.join(BASE_DIR, "data/raw")
 
 # Пути к твоим данным и моделям (используются в скриптах обработки)
 DATA_DIR = BASE_DIR / 'data' # D:/PythonProject/outfit_django/data

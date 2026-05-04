@@ -206,7 +206,7 @@ class MadFashionParser(BaseParser):
                                 image_path=relative_path,  # ← просто путь, без ContentFile!
                                 product_url=p_url,
                                 store=self.STORE_NAME,
-                                color=style
+                                style=style
                             ))
 
                         except Exception as e:

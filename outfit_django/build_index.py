@@ -5,7 +5,6 @@ import numpy as np
 import faiss
 from pathlib import Path
 
-# Инициализация Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "outfit_django.settings")
 django.setup()
 
@@ -14,66 +13,72 @@ from recommendations.models import ClothingItem
 MODELS_DIR = Path("models")
 MODELS_DIR.mkdir(exist_ok=True)
 
+CATEGORIES = ["tops", "bottoms", "shoes", "accessories"]
 
-def build_index_for_category(category):
-    # Берем ВСЕ объекты категории, у которых есть эмбеддинг
-    items = ClothingItem.objects.filter(category=category, embedding__isnull=False)
 
-    print(f"🔍 Найдено в базе для {category}: {items.count()} предметов")
+def main():
+    print("🚀 Сборка индексов")
 
-    embeddings = []
-    metadata = []
+    items = ClothingItem.objects.filter(embedding__isnull=False)
+    print(f"🔍 Всего предметов: {items.count()}")
+
+    category_buckets = {cat: [] for cat in CATEGORIES}
+    metadata_buckets = {cat: [] for cat in CATEGORIES}
 
     for item in items:
         try:
+            if not item.embedding:
+                continue
+
             emb = pickle.loads(item.embedding)
-            # Убеждаемся, что эмбеддинг — это numpy array
-            if isinstance(emb, list):
-                emb = np.array(emb)
 
-            embeddings.append(emb)
+            category = item.category
 
-            # ВАЖНО: Добавляем 'name', чтобы фильтр image_url в шаблоне работал
+            if category not in CATEGORIES:
+                print(f"❌ Пропущен (категория): {item.id}")
+                continue
+
             filename = Path(item.image_path).name
-            metadata.append({
+
+            category_buckets[category].append(emb)
+
+            metadata_buckets[category].append({
                 "id": item.id,
                 "name": filename,
                 "filename": filename,
-                "raw_filename": filename,
-                "gender": item.gender,
                 "image_path": item.image_path,
-                "category": item.category,  # 🔥 ВОТ ЭТО ГЛАВНОЕ
+                "category": category,
+                "gender": item.gender,
                 "color_name": item.color_name,
                 "color_rgb": item.color_rgb,
                 "style": "casual",
             })
+
         except Exception as e:
-            print(f"⚠️ Ошибка обработки предмета {item.id}: {e}")
+            print(f"⚠️ Ошибка {item.id}: {e}")
 
-    if not embeddings:
-        print(f"❌ Нет данных для создания индекса {category}")
-        return
+    # === СОЗДАНИЕ FAISS ИНДЕКСОВ ===
+    for category in CATEGORIES:
+        embeddings = category_buckets[category]
 
-    embeddings = np.array(embeddings).astype("float32")
+        if len(embeddings) == 0:
+            print(f"❌ {category}: пусто")
+            continue
 
-    # 🔥 ВОТ ЗДЕСЬ
-    faiss.normalize_L2(embeddings)
+        embeddings = np.array(embeddings).astype("float32")
+        faiss.normalize_L2(embeddings)
 
-    index = faiss.IndexFlatL2(embeddings.shape[1])
-    index.add(embeddings)
+        index = faiss.IndexFlatL2(embeddings.shape[1])
+        index.add(embeddings)
 
-    faiss.write_index(index, str(MODELS_DIR / f"{category}.index"))
+        faiss.write_index(index, str(MODELS_DIR / f"{category}.index"))
 
-    with open(MODELS_DIR / f"{category}_meta.pkl", "wb") as f:
-        pickle.dump(metadata, f)
+        with open(MODELS_DIR / f"{category}_meta.pkl", "wb") as f:
+            pickle.dump(metadata_buckets[category], f)
 
-    print(f"✅ Успешно сохранено: {len(metadata)} предметов в индексе {category}")
+        print(f"✅ {category}: {len(metadata_buckets[category])} предметов")
 
-
-def main():
-    categories = ["tops", "bottoms", "shoes", "accessories"]
-    for cat in categories:
-        build_index_for_category(cat)
+    print("🎉 Готово!")
 
 
 if __name__ == "__main__":
